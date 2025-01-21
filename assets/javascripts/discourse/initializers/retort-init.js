@@ -109,12 +109,155 @@ function initializePlugin(api) {
       }
     },
 
+    // See onShow in emoj-picker for logic pattern
     @action
     onShowRetort() {
-      // The rest of your onShowRetort logic remains unchanged
+      if (!this.limited) {
+        this.set("isLoading", true);
+      }
+
+      schedule("afterRender", () => {
+        document.addEventListener("click", this.handleOutsideClick);
+
+        const post = this.post;
+        const emojiPicker = document.querySelector(".emoji-picker");
+        const retortButton = document.querySelector(`
+          article[data-post-id="${post.id}"] .post-controls .retort`);
+
+        if (!emojiPicker || !retortButton) {
+          return false;
+        }
+
+        if (!this.site.isMobileDevice) {
+          this._popper = createPopper(retortButton, emojiPicker, {
+            placement: this.limited ? "top" : "bottom",
+          });
+        }
+
+        if (this.limited) {
+          const emojis = retort_allowed_emojis.split("|");
+
+          emojiPicker.innerHTML = `
+            <div class='limited-emoji-set'>
+              ${emojis
+                .map(
+                  (code) => `<img
+                src="${emojiUrlFor(code)}"
+                width=40
+                height=40
+                title='${code}'
+                class='emoji' />`
+                )
+                .join("")}
+            </div>
+          `;
+
+          emojiPicker.classList.add("has-limited-set");
+
+          emojiPicker.onclick = (e) => {
+            if (e.target.classList.contains("emoji")) {
+              this.emojiSelected(e.target.title);
+            } else {
+              this.set("isActive", false);
+              this.onClose();
+            }
+          };
+        } else {
+          emojiPicker
+            .querySelectorAll(".emojis-container .section .section-header")
+            .forEach((p) => this._sectionObserver.observe(p));
+
+          later(() => {
+            this.set("isLoading", false);
+            this.applyDiscourseTrick(emojiPicker);
+          }, 50);
+        }
+      });
     },
 
-    // Additional methods remain unchanged...
+    // Lifted from onShow in emoji-picker. See note in that function concerning its utility.
+    applyDiscourseTrick(emojiPicker) {
+      schedule("afterRender", () => {
+        if (!this.site.isMobileDevice || this.isEditorFocused) {
+          const filter = emojiPicker.querySelector("input.filter");
+          filter && filter.focus();
+        }
+
+        if (this.selectedDiversity !== 0) {
+          this._applyDiversity(this.selectedDiversity);
+        }
+      });
+    },
+
+    @action
+    onCategorySelection(sectionName) {
+      const section = document.querySelector(
+        `.emoji-picker-emoji-area .section[data-section="${sectionName}"]`
+      );
+      section &&
+        section.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
+    },
+
+    @action
+    onFilter(event) {
+      const emojiPickerArea = document.querySelector(
+        ".emoji-picker-emoji-area"
+      );
+      const emojisContainer =
+        emojiPickerArea.querySelector(".emojis-container");
+      const results = emojiPickerArea.querySelector(".results");
+      results.innerHTML = "";
+
+      if (event.target.value) {
+        results.innerHTML = emojiSearch(event.target.value.toLowerCase(), {
+          maxResults: 10,
+          diversity: this.emojiStore.diversity,
+        })
+          .map(this._replaceEmoji)
+          .join("");
+
+        emojisContainer.style.visibility = "hidden";
+        results.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
+      } else {
+        emojisContainer.style.visibility = "visible";
+      }
+    },
+
+    _emojisPerRow: {
+      0: 1,
+      1: 1,
+      2: 2,
+      3: 3,
+      4: 4,
+      5: 5,
+      6: 3,
+      7: 3,
+      8: 4,
+      9: 3,
+      10: 5,
+      11: 5,
+      12: 4,
+      13: 5,
+      14: 7,
+      15: 5,
+      16: 4,
+      17: 5,
+      18: 6,
+      19: 6,
+      20: 5,
+      21: 7,
+      22: 5,
+      23: 5,
+      24: 6,
+    },
   });
 }
 
