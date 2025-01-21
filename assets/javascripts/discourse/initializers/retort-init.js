@@ -34,7 +34,7 @@ class EmojiPickerComponent extends Component {
       const post = this.post;
       const emojiPicker = document.querySelector(".emoji-picker");
       const retortButton = document.querySelector(
-        `article[data-post-id="${post.id}"] .post-controls .retort`
+        `article[data-post-id="${post.id}"] .post-controls .retort`,
       );
 
       if (!emojiPicker || !retortButton) {
@@ -48,7 +48,8 @@ class EmojiPickerComponent extends Component {
       }
 
       if (this.limited) {
-        const emojis = this.retort.siteSettings.retort_allowed_emojis.split("|");
+        const emojis =
+          this.retort.siteSettings.retort_allowed_emojis.split("|");
 
         emojiPicker.innerHTML = `
           <div class='limited-emoji-set'>
@@ -60,7 +61,7 @@ class EmojiPickerComponent extends Component {
                   width=40
                   height=40
                   title='${code}'
-                  class='emoji' />`
+                  class='emoji' />`,
               )
               .join("")}
           </div>
@@ -105,7 +106,7 @@ class EmojiPickerComponent extends Component {
   @action
   onCategorySelection(sectionName) {
     const section = document.querySelector(
-      `.emoji-picker-emoji-area .section[data-section="${sectionName}"]`
+      `.emoji-picker-emoji-area .section[data-section="${sectionName}"]`,
     );
     section &&
       section.scrollIntoView({
@@ -151,19 +152,22 @@ function initializePlugin(api) {
 
   api.modifyClass("component:emoji-picker", EmojiPickerComponent);
 
-  api.registerValueTransformer("post-menu-buttons", ({ value: dag, context }) => {
-    const postId = context.post.id;
-    const retort = api.container.lookup("service:retort");
+  api.registerValueTransformer(
+    "post-menu-buttons",
+    ({ value: dag, context }) => {
+      const postId = context.post.id;
+      const retort = api.container.lookup("service:retort");
 
-    if (!retort.disabledFor(postId)) {
-      dag.add("retort", EmojiPickerComponent, {
-        post: context.post,
-        onClick: () => {
-          retort.openPicker(context.post);
-        },
-      });
-    }
-  });
+      if (!retort.disabledFor(postId)) {
+        dag.add("retort", EmojiPickerComponent, {
+          post: context.post,
+          onClick: () => {
+            retort.openPicker(context.post);
+          },
+        });
+      }
+    },
+  );
 }
 
 export default {
